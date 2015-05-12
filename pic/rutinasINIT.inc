@@ -1,0 +1,74 @@
+INIT_INTERR:
+
+		bsf RCON,IPEN		; PRIORIDADES si
+		bsf INTCON, GIEH	; ALTAS SI
+		bsf INTCON, GIEL	; BAJAS SI
+
+		;INT0 -> SENSORES IR
+	    bcf INTCON, INT0IE	; INT0 DISABLE
+		bcf INTCON2, INTEDG0; INT0 FALLING EDGE
+
+		;INT1 -> SET MODE
+		bcf INTCON3, INT1IP	; INT1 PRIORIDAD BAJA 
+		bcf INTCON2, INTEDG1; INT1 FALLING EDGE
+		bsf INTCON3, INT1IE ; INT1 ENABLE
+
+		;INT2 -> ENCIENDE ALARMA
+		bcf INTCON3, INT2IP	; INT2 PRIORIDAD BAJA 
+		bcf INTCON2, INTEDG2; INT2 FALLING EDGE
+		bcf INTCON3, INT2IE ; INT2 DISABLE
+
+		;TMR0 -> RELOJ
+		bsf INTCON2,TMR0IP	;TMR0 prioridad baja
+		bsf INTCON,TMR0IE	;TMR0 enable
+		
+		bcf T0CON,T08BIT	;modo 16BITS		
+		bcf T0CON,T0CS		;CS interno CICLO de INSTRUCCION		
+		bcf T0CON,T0SE		;falling edge
+		bcf	T0CON,PSA		;si usa PRESCALER
+		
+		bsf T0CON,T0PS2		;PRESCALER 1:256
+		bsf T0CON,T0PS1
+		bsf T0CON,T0PS0
+
+		call RELOAD_TMR		;CARGA VALORES AL TMR0
+		bsf T0CON, TMR0ON
+		
+		return
+
+INIT_PUERTOS:
+
+		;PUERTOA->   OUTPUT FOCOS (A0-A5) f1-f6
+		movlw 0x0F
+		movwf ADCON1	;HAZ DIGITAL PtoA
+		clrf TRISA
+		clrf PORTA
+
+		;PUERTOB-> TECLADO RENGLONES(B7-B4 INPUTS), BOTONES IN(B3-B1) y SENSOR INT0 en BO INPUT
+		setf TRISB
+		clrf PORTB
+		bcf	INTCON2,RBPU	;Turn on the PORT B pullups
+
+		;PUERTOC-> OUTPUT FOCOS f1-f3(C0-C2) 
+		clrf TRISC
+		clrf PORTC
+
+		;PUERT0D -> LCDOUT(D7-D1) 
+		clrf TRISD
+		clrf PORTD
+
+		;PUERTOE ->  OUTPUT ALARMA E0 -E1OUTPUT f7
+		
+		bcf TRISE,0
+		bcf TRISE,1
+		bcf TRISE,2
+		clrf PORTE
+		return
+
+
+RELOAD_TMR:
+		movlw 0xC2			;carga 49911 al timer0
+		movwf TMR0H
+		movlw 0xF7			;carga 49911 al timer0
+		movwf TMR0L	
+		return
